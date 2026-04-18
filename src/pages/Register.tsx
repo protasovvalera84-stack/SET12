@@ -1,7 +1,8 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Sparkles, Camera, ChevronRight, ChevronLeft, Globe, Monitor,
   Smartphone, Download, Check, Search, User, AtSign, Lock, Eye, EyeOff,
+  ExternalLink, Loader2,
 } from "lucide-react";
 import { languages, platforms, PlatformId } from "@/data/languages";
 import { UserProfile } from "@/data/mockData";
@@ -37,17 +38,33 @@ function resizeAvatar(file: File): Promise<string> {
   });
 }
 
+function detectPlatform(): PlatformId {
+  const ua = navigator.userAgent.toLowerCase();
+  if (/iphone|ipad|ipod/.test(ua)) return "ios";
+  if (/android/.test(ua)) return "android";
+  if (/win/.test(ua)) return "windows";
+  return "linux";
+}
+
 export default function RegisterPage({ onComplete }: RegisterPageProps) {
   const [step, setStep] = useState<Step>("welcome");
   const [lang, setLang] = useState("en");
   const [langSearch, setLangSearch] = useState("");
   const [platform, setPlatform] = useState<PlatformId | null>(null);
+  const [downloading, setDownloading] = useState(false);
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [password, setPassword] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Auto-detect platform when step opens
+  useEffect(() => {
+    if (step === "platform" && !platform) {
+      setPlatform(detectPlatform());
+    }
+  }, [step, platform]);
 
   const filteredLangs = languages.filter(
     (l) =>
@@ -89,29 +106,50 @@ export default function RegisterPage({ onComplete }: RegisterPageProps) {
     onComplete(profile, lang, platform);
   };
 
-  const downloadUrls: Record<PlatformId, string> = {
-    windows: "/installers/Meshlink-Install.bat",
-    linux: "/installers/Meshlink.AppImage",
-    android: "/installers/Meshlink-Android.html",
-    ios: "/installers/Meshlink-iOS.html",
-  };
+  const handleInstall = () => {
+    if (!platform) return;
+    setDownloading(true);
 
-  const handlePlatformSelect = (id: PlatformId) => {
-    setPlatform(id);
-    // Trigger download via direct link
-    const a = document.createElement("a");
-    a.href = downloadUrls[id];
-    a.download = platforms.find((x) => x.id === id)?.fileName || "";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    if (platform === "android" || platform === "ios") {
+      // Mobile: open app in new tab -> browser will offer PWA install
+      window.open(window.location.origin, "_blank");
+      setTimeout(() => {
+        setDownloading(false);
+        setStep("profile");
+      }, 1500);
+    } else if (platform === "linux") {
+      // Linux: download real AppImage
+      const a = document.createElement("a");
+      a.href = "/installers/Meshlink.AppImage";
+      a.download = "Meshlink.AppImage";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => {
+        setDownloading(false);
+        setStep("profile");
+      }, 2000);
+    } else {
+      // Windows: download .bat installer
+      const a = document.createElement("a");
+      a.href = "/installers/Meshlink-Install.bat";
+      a.download = "Meshlink-Install.bat";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => {
+        setDownloading(false);
+        setStep("profile");
+      }, 2000);
+    }
   };
 
   const canProceedProfile = name.trim().length >= 2;
 
+  const detectedPlatformInfo = platform ? platforms.find((p) => p.id === platform) : null;
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      {/* Background mesh */}
       <div className="pointer-events-none fixed inset-0" style={{ backgroundImage: "var(--gradient-mesh)", backgroundAttachment: "fixed" }} />
       <div className="pointer-events-none fixed top-1/4 left-1/4 h-96 w-96 rounded-full bg-primary/15 blur-3xl animate-float" />
       <div className="pointer-events-none fixed bottom-1/4 right-1/4 h-80 w-80 rounded-full bg-accent/15 blur-3xl animate-float" style={{ animationDelay: "2s" }} />
@@ -140,9 +178,7 @@ export default function RegisterPage({ onComplete }: RegisterPageProps) {
             >
               Get Started
             </button>
-            <p className="text-[10px] font-mono text-muted-foreground">
-              No phone number required - fully anonymous
-            </p>
+            <p className="text-[10px] font-mono text-muted-foreground">No phone number required - fully anonymous</p>
           </div>
         )}
 
@@ -160,30 +196,14 @@ export default function RegisterPage({ onComplete }: RegisterPageProps) {
               <Globe className="h-5 w-5 text-primary" />
             </div>
 
-            {/* Search */}
             <div className="flex items-center gap-2.5 rounded-2xl glass border border-border/50 px-4 py-2.5 mb-4 focus-within:border-primary/50 focus-within:shadow-glow transition-all">
               <Search className="h-4 w-4 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Search language..."
-                value={langSearch}
-                onChange={(e) => setLangSearch(e.target.value)}
-                className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
-              />
+              <input type="text" placeholder="Search language..." value={langSearch} onChange={(e) => setLangSearch(e.target.value)} className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none" />
             </div>
 
-            {/* Language list */}
             <div className="max-h-[45vh] overflow-y-auto scrollbar-thin space-y-1 -mx-1 px-1">
               {filteredLangs.map((l) => (
-                <button
-                  key={l.code}
-                  onClick={() => setLang(l.code)}
-                  className={`flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition-all ${
-                    lang === l.code
-                      ? "bg-primary/10 border border-primary/30 shadow-glow"
-                      : "hover:bg-surface-hover border border-transparent"
-                  }`}
-                >
+                <button key={l.code} onClick={() => setLang(l.code)} className={`flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition-all ${lang === l.code ? "bg-primary/10 border border-primary/30 shadow-glow" : "hover:bg-surface-hover border border-transparent"}`}>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground">{l.native}</p>
                     <p className="text-[11px] text-muted-foreground">{l.name}</p>
@@ -197,12 +217,8 @@ export default function RegisterPage({ onComplete }: RegisterPageProps) {
               ))}
             </div>
 
-            <button
-              onClick={() => setStep("platform")}
-              className="mt-4 w-full rounded-2xl py-3 text-sm font-semibold gradient-primary text-primary-foreground shadow-glow hover:scale-[1.02] transition-all"
-            >
-              Continue
-              <ChevronRight className="h-4 w-4 inline ml-1" />
+            <button onClick={() => setStep("platform")} className="mt-4 w-full rounded-2xl py-3 text-sm font-semibold gradient-primary text-primary-foreground shadow-glow hover:scale-[1.02] transition-all">
+              Continue <ChevronRight className="h-4 w-4 inline ml-1" />
             </button>
           </div>
         )}
@@ -215,70 +231,106 @@ export default function RegisterPage({ onComplete }: RegisterPageProps) {
                 <ChevronLeft className="h-4 w-4 text-muted-foreground" />
               </button>
               <div className="flex-1">
-                <h2 className="text-lg font-serif italic gradient-text">Your Device</h2>
-                <p className="text-[11px] text-muted-foreground">Download the app for your platform</p>
+                <h2 className="text-lg font-serif italic gradient-text">Install App</h2>
+                <p className="text-[11px] text-muted-foreground">
+                  {detectedPlatformInfo ? `Detected: ${detectedPlatformInfo.name}` : "Choose your platform"}
+                </p>
               </div>
               <Monitor className="h-5 w-5 text-primary" />
             </div>
 
-            <div className="space-y-2 mb-4">
+            {/* Platform selector */}
+            <div className="flex gap-2 mb-5">
               {platforms.map((p) => (
                 <button
                   key={p.id}
-                  onClick={() => handlePlatformSelect(p.id)}
-                  className={`flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition-all ${
+                  onClick={() => setPlatform(p.id)}
+                  className={`flex-1 flex flex-col items-center gap-1.5 rounded-2xl border py-3 transition-all ${
                     platform === p.id
                       ? "border-primary/50 bg-primary/10 shadow-glow"
                       : "border-border/50 hover:border-primary/30 hover:bg-surface-hover"
                   }`}
                 >
-                  <div className={`flex h-12 w-12 items-center justify-center rounded-2xl text-lg font-bold ${
-                    p.id === "windows" ? "bg-blue-500/20 text-blue-400 border border-blue-500/30" :
-                    p.id === "linux" ? "bg-orange-500/20 text-orange-400 border border-orange-500/30" :
-                    p.id === "android" ? "bg-green-500/20 text-green-400 border border-green-500/30" :
-                    "bg-gray-500/20 text-gray-400 border border-gray-500/30"
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl text-sm font-bold ${
+                    p.id === "windows" ? "bg-blue-500/20 text-blue-400" :
+                    p.id === "linux" ? "bg-orange-500/20 text-orange-400" :
+                    p.id === "android" ? "bg-green-500/20 text-green-400" :
+                    "bg-gray-500/20 text-gray-400"
                   }`}>
-                    {p.id === "windows" ? <Monitor className="h-5 w-5" /> :
+                    {p.id === "windows" ? <Monitor className="h-4 w-4" /> :
                      p.id === "linux" ? "L" :
-                     <Smartphone className="h-5 w-5" />}
+                     p.id === "ios" ? "i" :
+                     <Smartphone className="h-4 w-4" />}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-foreground">{p.name}</p>
-                    <p className="text-[11px] text-muted-foreground">{p.description}</p>
-                    <p className="text-[10px] font-mono text-muted-foreground">{p.fileName} ({p.fileSize})</p>
-                  </div>
-                  {platform === p.id ? (
-                    <div className="flex flex-col items-center gap-1">
-                      <div className="flex h-6 w-6 items-center justify-center rounded-full gradient-primary">
-                        <Check className="h-3.5 w-3.5 text-primary-foreground" />
-                      </div>
-                      <span className="text-[9px] text-online font-mono">Downloaded</span>
-                    </div>
-                  ) : (
-                    <Download className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                  )}
+                  <span className="text-[11px] font-medium text-foreground">{p.name}</span>
+                  {platform === p.id && <Check className="h-3 w-3 text-primary" />}
                 </button>
               ))}
             </div>
 
-            {/* Re-download button if already selected */}
-            {platform && (
-              <a
-                href={downloadUrls[platform]}
-                download={platforms.find((p) => p.id === platform)?.fileName}
-                className="w-full flex items-center justify-center gap-2 rounded-2xl border border-accent/40 py-2.5 text-sm font-medium text-accent hover:bg-accent/10 transition-all mb-4"
-              >
-                <Download className="h-4 w-4" />
-                Re-download {platforms.find((p) => p.id === platform)?.fileName}
-              </a>
+            {/* Install info for selected platform */}
+            {detectedPlatformInfo && (
+              <div className="rounded-2xl glass border border-border/50 p-4 mb-4">
+                <p className="text-sm font-semibold text-foreground mb-1">{detectedPlatformInfo.name}</p>
+                <p className="text-[11px] text-muted-foreground mb-3">{detectedPlatformInfo.description}</p>
+
+                {(platform === "android" || platform === "ios") ? (
+                  <div className="space-y-2">
+                    <p className="text-[11px] text-muted-foreground">
+                      {platform === "android"
+                        ? "The app will open in Chrome. Tap menu ⋮ → \"Install app\" to add to home screen."
+                        : "The app will open in Safari. Tap Share ↑ → \"Add to Home Screen\"."
+                      }
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-[11px] text-muted-foreground">
+                      {platform === "linux"
+                        ? "Downloads Meshlink.AppImage (116 MB). Run: chmod +x Meshlink.AppImage && ./Meshlink.AppImage"
+                        : "Downloads installer. Double-click to create Desktop shortcut."
+                      }
+                    </p>
+                    <p className="text-[10px] font-mono text-muted-foreground">
+                      {detectedPlatformInfo.fileName} ({detectedPlatformInfo.fileSize})
+                    </p>
+                  </div>
+                )}
+              </div>
             )}
 
+            {/* Install button */}
+            <button
+              onClick={handleInstall}
+              disabled={!platform || downloading}
+              className={`w-full rounded-2xl py-3.5 text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
+                !platform || downloading
+                  ? "bg-secondary text-muted-foreground cursor-not-allowed"
+                  : "gradient-primary text-primary-foreground shadow-glow hover:scale-[1.02]"
+              }`}
+            >
+              {downloading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {(platform === "android" || platform === "ios") ? "Opening app..." : "Downloading..."}
+                </>
+              ) : (
+                <>
+                  {(platform === "android" || platform === "ios") ? (
+                    <><ExternalLink className="h-4 w-4" /> Install as App</>
+                  ) : (
+                    <><Download className="h-4 w-4" /> Download & Install</>
+                  )}
+                </>
+              )}
+            </button>
+
+            {/* Skip */}
             <button
               onClick={() => setStep("profile")}
-              className="w-full rounded-2xl py-3 text-sm font-semibold gradient-primary text-primary-foreground shadow-glow hover:scale-[1.02] transition-all"
+              className="mt-3 w-full rounded-2xl py-2.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-all"
             >
-              {platform ? "Continue to Registration" : "Skip & Use Web Version"}
-              <ChevronRight className="h-4 w-4 inline ml-1" />
+              Skip — use in browser
             </button>
           </div>
         )}
@@ -297,7 +349,6 @@ export default function RegisterPage({ onComplete }: RegisterPageProps) {
             </div>
 
             <div className="space-y-5">
-              {/* Avatar */}
               <div className="flex flex-col items-center gap-2">
                 <div className="relative group cursor-pointer" onClick={() => fileRef.current?.click()}>
                   {avatarUrl ? (
@@ -316,71 +367,43 @@ export default function RegisterPage({ onComplete }: RegisterPageProps) {
                 </button>
               </div>
 
-              {/* Name */}
               <div>
                 <label className="text-[10px] font-mono uppercase tracking-[0.15em] text-muted-foreground mb-1.5 block">Display Name *</label>
                 <div className="flex items-center gap-3 rounded-2xl glass border border-border/50 px-4 py-3 focus-within:border-primary/50 focus-within:shadow-glow transition-all">
                   <User className="h-4 w-4 text-muted-foreground" />
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Your name"
-                    autoFocus
-                    className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
-                  />
+                  <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" autoFocus className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none" />
                 </div>
               </div>
 
-              {/* Username */}
               <div>
                 <label className="text-[10px] font-mono uppercase tracking-[0.15em] text-muted-foreground mb-1.5 block">Username</label>
                 <div className="flex items-center gap-3 rounded-2xl glass border border-border/50 px-4 py-3 focus-within:border-primary/50 focus-within:shadow-glow transition-all">
                   <AtSign className="h-4 w-4 text-muted-foreground" />
-                  <input
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
-                    placeholder="username"
-                    className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
-                  />
+                  <input type="text" value={username} onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))} placeholder="username" className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none" />
                 </div>
               </div>
 
-              {/* Password */}
               <div>
                 <label className="text-[10px] font-mono uppercase tracking-[0.15em] text-muted-foreground mb-1.5 block">Password</label>
                 <div className="flex items-center gap-3 rounded-2xl glass border border-border/50 px-4 py-3 focus-within:border-primary/50 focus-within:shadow-glow transition-all">
                   <Lock className="h-4 w-4 text-muted-foreground" />
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Create a password"
-                    className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
-                  />
+                  <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Create a password" className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none" />
                   <button onClick={() => setShowPassword((s) => !s)} className="text-muted-foreground hover:text-primary transition-colors">
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
               </div>
 
-              {/* Info */}
               <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-primary/5 border border-primary/10">
                 <Lock className="h-4 w-4 text-primary flex-shrink-0" />
-                <p className="text-[11px] text-muted-foreground">
-                  No phone or email needed. Your identity is cryptographic.
-                </p>
+                <p className="text-[11px] text-muted-foreground">No phone or email needed. Your identity is cryptographic.</p>
               </div>
 
-              {/* Register button */}
               <button
                 onClick={() => setStep("done")}
                 disabled={!canProceedProfile}
                 className={`w-full rounded-2xl py-3.5 text-sm font-semibold transition-all ${
-                  canProceedProfile
-                    ? "gradient-primary text-primary-foreground shadow-glow hover:scale-[1.02]"
-                    : "bg-secondary text-muted-foreground cursor-not-allowed"
+                  canProceedProfile ? "gradient-primary text-primary-foreground shadow-glow hover:scale-[1.02]" : "bg-secondary text-muted-foreground cursor-not-allowed"
                 }`}
               >
                 Create Account
@@ -400,20 +423,9 @@ export default function RegisterPage({ onComplete }: RegisterPageProps) {
             </div>
             <div>
               <h2 className="text-2xl font-semibold text-foreground mb-2">Welcome, {name.trim() || "Anonymous"}!</h2>
-              <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-                Your encrypted identity has been generated. You're ready to start messaging.
-              </p>
+              <p className="text-sm text-muted-foreground max-w-xs mx-auto">Your encrypted identity has been generated. You're ready to start messaging.</p>
             </div>
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full glass border border-border/50">
-              <span className="h-2 w-2 rounded-full bg-online animate-pulse" />
-              <p className="text-xs font-mono text-muted-foreground">
-                peer:{Math.random().toString(36).slice(2, 6)}...{Math.random().toString(36).slice(2, 6)} connected
-              </p>
-            </div>
-            <button
-              onClick={handleFinish}
-              className="w-full max-w-xs rounded-2xl py-3.5 text-sm font-semibold gradient-primary text-primary-foreground shadow-glow hover:scale-[1.02] transition-all"
-            >
+            <button onClick={handleFinish} className="w-full max-w-xs rounded-2xl py-3.5 text-sm font-semibold gradient-primary text-primary-foreground shadow-glow hover:scale-[1.02] transition-all">
               Enter Meshlink
             </button>
           </div>
@@ -423,14 +435,10 @@ export default function RegisterPage({ onComplete }: RegisterPageProps) {
         {step !== "welcome" && step !== "done" && (
           <div className="flex justify-center gap-2 mt-6">
             {(["language", "platform", "profile"] as const).map((s, i) => (
-              <div
-                key={s}
-                className={`h-1.5 rounded-full transition-all ${
-                  s === step ? "w-8 gradient-primary" :
-                  (["language", "platform", "profile"].indexOf(step) > i) ? "w-4 bg-primary/40" :
-                  "w-4 bg-muted"
-                }`}
-              />
+              <div key={s} className={`h-1.5 rounded-full transition-all ${
+                s === step ? "w-8 gradient-primary" :
+                (["language", "platform", "profile"].indexOf(step) > i) ? "w-4 bg-primary/40" : "w-4 bg-muted"
+              }`} />
             ))}
           </div>
         )}
