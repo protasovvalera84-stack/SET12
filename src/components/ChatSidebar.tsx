@@ -1,14 +1,17 @@
 import { useState } from "react";
 import { Search, Plus, Hash, Users, Pin, Sparkles } from "lucide-react";
-import { Chat } from "@/data/mockData";
+import { Chat, Story, StoryItem } from "@/data/mockData";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { CreateChatDialog } from "@/components/CreateChatDialog";
+import { StoriesBar, AddStoryDialog } from "@/components/StoriesBar";
 
 interface ChatSidebarProps {
   chats: Chat[];
+  stories: Story[];
   selectedChatId: string | null;
   onSelectChat: (id: string) => void;
   onCreateChat: (chat: Chat) => void;
+  onAddStory: (items: StoryItem[]) => void;
 }
 
 const TypeIcon = ({ type }: { type: Chat["type"] }) => {
@@ -17,10 +20,12 @@ const TypeIcon = ({ type }: { type: Chat["type"] }) => {
   return null;
 };
 
-export function ChatSidebar({ chats, selectedChatId, onSelectChat, onCreateChat }: ChatSidebarProps) {
+export function ChatSidebar({ chats, stories, selectedChatId, onSelectChat, onCreateChat, onAddStory }: ChatSidebarProps) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "dm" | "group" | "channel">("all");
   const [createOpen, setCreateOpen] = useState(false);
+  const [createType, setCreateType] = useState<"group" | "channel">("group");
+  const [storyOpen, setStoryOpen] = useState(false);
 
   const filtered = chats.filter((c) => {
     if (filter !== "all" && c.type !== filter) return false;
@@ -30,6 +35,11 @@ export function ChatSidebar({ chats, selectedChatId, onSelectChat, onCreateChat 
 
   const pinned = filtered.filter((c) => c.pinned);
   const unpinned = filtered.filter((c) => !c.pinned);
+
+  const openCreateDialog = (type: "group" | "channel") => {
+    setCreateType(type);
+    setCreateOpen(true);
+  };
 
   return (
     <>
@@ -52,14 +62,19 @@ export function ChatSidebar({ chats, selectedChatId, onSelectChat, onCreateChat 
           </div>
           <div className="flex items-center gap-1">
             <ThemeSwitcher />
+            {/* + button = Add Story */}
             <button
-              onClick={() => setCreateOpen(true)}
+              onClick={() => setStoryOpen(true)}
               className="rounded-lg p-2 gradient-primary shadow-glow transition-all hover:scale-105"
+              title="Add Story"
             >
               <Plus className="h-4 w-4 text-primary-foreground" />
             </button>
           </div>
         </div>
+
+        {/* Stories bar */}
+        <StoriesBar stories={stories} onAddStory={() => setStoryOpen(true)} />
 
         {/* Search */}
         <div className="relative px-4 py-3">
@@ -93,6 +108,25 @@ export function ChatSidebar({ chats, selectedChatId, onSelectChat, onCreateChat 
           ))}
         </div>
 
+        {/* Create button for Groups / Channels sections */}
+        {(filter === "group" || filter === "channel") && (
+          <div className="px-4 pb-2">
+            <button
+              onClick={() => openCreateDialog(filter)}
+              className="flex w-full items-center gap-2.5 rounded-2xl border border-dashed border-primary/40 px-3 py-2.5 text-sm font-medium text-primary hover:bg-primary/5 hover:border-primary/60 transition-all"
+            >
+              <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${
+                filter === "channel"
+                  ? "bg-gradient-to-br from-accent/20 to-accent/5 border border-accent/20"
+                  : "bg-gradient-to-br from-primary/20 to-primary-glow/5 border border-primary/20"
+              }`}>
+                <Plus className={`h-4 w-4 ${filter === "channel" ? "text-accent" : "text-primary"}`} />
+              </div>
+              <span>Create {filter === "channel" ? "Channel" : "Group"}</span>
+            </button>
+          </div>
+        )}
+
         {/* Chat list */}
         <div className="relative flex-1 overflow-y-auto scrollbar-thin">
           {pinned.length > 0 && (
@@ -113,6 +147,31 @@ export function ChatSidebar({ chats, selectedChatId, onSelectChat, onCreateChat 
               <div className="flex items-center gap-1.5 px-2 py-2 mt-2">
                 <span className="text-[10px] font-mono font-semibold uppercase tracking-[0.15em] text-muted-foreground">Recent</span>
                 <div className="flex-1 h-px bg-gradient-to-r from-border/60 to-transparent ml-2" />
+              </div>
+            )}
+            {unpinned.length === 0 && filter !== "all" && (
+              <div className="flex flex-col items-center py-8 text-center">
+                <div className={`flex h-12 w-12 items-center justify-center rounded-2xl mb-3 ${
+                  filter === "channel"
+                    ? "bg-gradient-to-br from-accent/20 to-accent/5 border border-accent/20"
+                    : filter === "group"
+                    ? "bg-gradient-to-br from-primary/20 to-primary-glow/5 border border-primary/20"
+                    : "bg-secondary border border-border"
+                }`}>
+                  {filter === "channel" ? <Hash className="h-5 w-5 text-accent" /> :
+                   filter === "group" ? <Users className="h-5 w-5 text-primary" /> : null}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  No {filter === "channel" ? "channels" : filter === "group" ? "groups" : "chats"} yet
+                </p>
+                {(filter === "group" || filter === "channel") && (
+                  <button
+                    onClick={() => openCreateDialog(filter)}
+                    className="mt-2 text-xs font-medium text-primary hover:underline"
+                  >
+                    Create your first {filter === "channel" ? "channel" : "group"}
+                  </button>
+                )}
               </div>
             )}
             {unpinned.map((chat, i) => (
@@ -144,8 +203,15 @@ export function ChatSidebar({ chats, selectedChatId, onSelectChat, onCreateChat 
 
       <CreateChatDialog
         open={createOpen}
+        type={createType}
         onClose={() => setCreateOpen(false)}
         onCreate={onCreateChat}
+      />
+
+      <AddStoryDialog
+        open={storyOpen}
+        onClose={() => setStoryOpen(false)}
+        onAdd={onAddStory}
       />
     </>
   );

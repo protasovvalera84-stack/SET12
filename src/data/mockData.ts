@@ -31,6 +31,23 @@ export interface Chat {
   messages: Message[];
 }
 
+export interface StoryItem {
+  id: string;
+  type: "image" | "video";
+  url: string;
+  caption?: string;
+  timestamp: string;
+}
+
+export interface Story {
+  id: string;
+  userId: string;
+  userName: string;
+  avatar: string;
+  items: StoryItem[];
+  viewed: boolean;
+}
+
 const ME = "me";
 
 export const chats: Chat[] = [

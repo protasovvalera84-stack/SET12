@@ -2,10 +2,34 @@ import { useState } from "react";
 import { ChatSidebar } from "@/components/ChatSidebar";
 import { ChatView } from "@/components/ChatView";
 import { EmptyChat } from "@/components/EmptyChat";
-import { chats as initialChats, Chat, Message, MediaAttachment } from "@/data/mockData";
+import { chats as initialChats, Chat, Message, MediaAttachment, Story, StoryItem } from "@/data/mockData";
+
+const initialStories: Story[] = [
+  {
+    id: "s1",
+    userId: "alice",
+    userName: "Alice Nakamoto",
+    avatar: "AN",
+    items: [
+      { id: "si1", type: "image", url: "https://picsum.photos/seed/mesh1/800/1200", caption: "New relay node deployed", timestamp: "2h ago" },
+    ],
+    viewed: false,
+  },
+  {
+    id: "s2",
+    userId: "bob",
+    userName: "Bob Chen",
+    avatar: "BC",
+    items: [
+      { id: "si2", type: "image", url: "https://picsum.photos/seed/mesh2/800/1200", caption: "QUIC upgrade testing", timestamp: "4h ago" },
+    ],
+    viewed: true,
+  },
+];
 
 const Index = () => {
   const [chatList, setChatList] = useState<Chat[]>(initialChats);
+  const [stories, setStories] = useState<Story[]>(initialStories);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
@@ -13,9 +37,7 @@ const Index = () => {
 
   const handleSelectChat = (id: string) => {
     setSelectedChatId(id);
-    if (window.innerWidth < 768) {
-      setSidebarOpen(false);
-    }
+    if (window.innerWidth < 768) setSidebarOpen(false);
   };
 
   const handleSendMessage = (chatId: string, text: string, media?: MediaAttachment[]) => {
@@ -27,20 +49,13 @@ const Index = () => {
       read: false,
       media,
     };
-
     const lastMsg = media && media.length > 0 && !text
       ? `[${media[0].type === "image" ? "Photo" : media[0].type === "video" ? "Video" : "Audio"}]`
       : text;
-
     setChatList((prev) =>
       prev.map((chat) =>
         chat.id === chatId
-          ? {
-              ...chat,
-              messages: [...chat.messages, newMessage],
-              lastMessage: lastMsg,
-              lastMessageTime: "now",
-            }
+          ? { ...chat, messages: [...chat.messages, newMessage], lastMessage: lastMsg, lastMessageTime: "now" }
           : chat,
       ),
     );
@@ -49,41 +64,40 @@ const Index = () => {
   const handleCreateChat = (chat: Chat) => {
     setChatList((prev) => [chat, ...prev]);
     setSelectedChatId(chat.id);
-    if (window.innerWidth < 768) {
-      setSidebarOpen(false);
+    if (window.innerWidth < 768) setSidebarOpen(false);
+  };
+
+  const handleAddStory = (items: StoryItem[]) => {
+    const existing = stories.find((s) => s.userId === "me");
+    if (existing) {
+      setStories((prev) =>
+        prev.map((s) => s.userId === "me" ? { ...s, items: [...s.items, ...items] } : s),
+      );
+    } else {
+      setStories((prev) => [
+        { id: `story-${Date.now()}`, userId: "me", userName: "Anonymous", avatar: "ME", items, viewed: true },
+        ...prev,
+      ]);
     }
   };
 
-  const handleBack = () => {
-    setSidebarOpen(true);
-  };
+  const handleBack = () => setSidebarOpen(true);
 
   return (
     <div className="flex h-screen w-full overflow-hidden">
-      <div
-        className={`${
-          sidebarOpen ? "flex" : "hidden"
-        } md:flex w-full md:w-auto flex-shrink-0`}
-      >
+      <div className={`${sidebarOpen ? "flex" : "hidden"} md:flex w-full md:w-auto flex-shrink-0`}>
         <ChatSidebar
           chats={chatList}
+          stories={stories}
           selectedChatId={selectedChatId}
           onSelectChat={handleSelectChat}
           onCreateChat={handleCreateChat}
+          onAddStory={handleAddStory}
         />
       </div>
-
-      <div
-        className={`${
-          !sidebarOpen ? "flex" : "hidden"
-        } md:flex flex-1 min-w-0`}
-      >
+      <div className={`${!sidebarOpen ? "flex" : "hidden"} md:flex flex-1 min-w-0`}>
         {selectedChat ? (
-          <ChatView
-            chat={selectedChat}
-            onSendMessage={handleSendMessage}
-            onBack={handleBack}
-          />
+          <ChatView chat={selectedChat} onSendMessage={handleSendMessage} onBack={handleBack} />
         ) : (
           <EmptyChat />
         )}
