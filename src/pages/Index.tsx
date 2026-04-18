@@ -4,6 +4,7 @@ import { ChatView } from "@/components/ChatView";
 import { EmptyChat } from "@/components/EmptyChat";
 import { InviteMembersDialog } from "@/components/InviteMembersDialog";
 import { AccountSettings } from "@/components/AccountSettings";
+import { CallScreen, CallType } from "@/components/CallScreen";
 import {
   chats as initialChats, contacts, defaultProfile,
   Chat, Message, MediaAttachment, Story, StoryItem, UserProfile,
@@ -40,6 +41,8 @@ const Index = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [callOpen, setCallOpen] = useState(false);
+  const [callType, setCallType] = useState<CallType>("audio");
 
   const selectedChat = chatList.find((c) => c.id === selectedChatId) ?? null;
 
@@ -130,6 +133,11 @@ const Index = () => {
     setProfile(updated);
   };
 
+  const handleCall = (type: CallType) => {
+    setCallType(type);
+    setCallOpen(true);
+  };
+
   const handleBack = () => setSidebarOpen(true);
 
   return (
@@ -157,6 +165,7 @@ const Index = () => {
                 ? () => setInviteOpen(true)
                 : undefined
             }
+            onCall={selectedChat.type !== "channel" ? handleCall : undefined}
           />
         ) : (
           <EmptyChat />
@@ -179,6 +188,16 @@ const Index = () => {
         onClose={() => setSettingsOpen(false)}
         onUpdate={handleUpdateProfile}
       />
+
+      {selectedChat && (
+        <CallScreen
+          open={callOpen}
+          type={callType}
+          contactName={selectedChat.name}
+          contactAvatar={selectedChat.avatar}
+          onEnd={() => setCallOpen(false)}
+        />
+      )}
     </div>
   );
 };

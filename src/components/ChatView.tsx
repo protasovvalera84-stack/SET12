@@ -11,6 +11,7 @@ interface ChatViewProps {
   onSendMessage: (chatId: string, text: string, media?: MediaAttachment[]) => void;
   onBack: () => void;
   onInviteClick?: () => void;
+  onCall?: (type: "audio" | "video") => void;
 }
 
 function formatFileSize(bytes: number): string {
@@ -28,7 +29,7 @@ function downloadMedia(attachment: MediaAttachment) {
   document.body.removeChild(a);
 }
 
-export function ChatView({ chat, onSendMessage, onBack, onInviteClick }: ChatViewProps) {
+export function ChatView({ chat, onSendMessage, onBack, onInviteClick, onCall }: ChatViewProps) {
   const [input, setInput] = useState("");
   const [pendingMedia, setPendingMedia] = useState<MediaAttachment[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -135,12 +136,20 @@ export function ChatView({ chat, onSendMessage, onBack, onInviteClick }: ChatVie
           </div>
         </div>
         <div className="flex items-center gap-1">
-          {chat.type === "dm" && (
+          {(chat.type === "dm" || chat.type === "group") && onCall && (
             <>
-              <button className="hidden sm:flex rounded-xl p-2.5 hover:bg-surface-hover transition-all hover:scale-105 hover:text-primary">
+              <button
+                onClick={() => onCall("audio")}
+                className="rounded-xl p-2.5 hover:bg-surface-hover transition-all hover:scale-105 hover:text-primary"
+                title="Audio call"
+              >
                 <Phone className="h-4 w-4 text-muted-foreground" />
               </button>
-              <button className="hidden sm:flex rounded-xl p-2.5 hover:bg-surface-hover transition-all hover:scale-105 hover:text-primary">
+              <button
+                onClick={() => onCall("video")}
+                className="rounded-xl p-2.5 hover:bg-surface-hover transition-all hover:scale-105 hover:text-primary"
+                title="Video call"
+              >
                 <Video className="h-4 w-4 text-muted-foreground" />
               </button>
             </>
