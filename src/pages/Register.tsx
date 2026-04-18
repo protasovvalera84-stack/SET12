@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import {
   Sparkles, Camera, ChevronRight, ChevronLeft, Globe, Monitor,
   Smartphone, Download, Check, Search, User, AtSign, Lock, Eye, EyeOff,
-  ExternalLink, Loader2,
+  Loader2,
 } from "lucide-react";
 import { languages, platforms, PlatformId } from "@/data/languages";
 import { UserProfile } from "@/data/mockData";
@@ -123,7 +123,6 @@ export default function RegisterPage({ onComplete }: RegisterPageProps) {
         URL.revokeObjectURL(blobUrl);
       }, 100);
     } catch {
-      // Fallback: direct link
       const a = document.createElement("a");
       a.href = url;
       a.download = fileName;
@@ -133,13 +132,16 @@ export default function RegisterPage({ onComplete }: RegisterPageProps) {
 
   const handleInstall = async () => {
     if (!platform) return;
-    setDownloading(true);
 
+    if (platform === "android" || platform === "ios") {
+      // Mobile: no download needed, just go to profile
+      setStep("profile");
+      return;
+    }
+
+    setDownloading(true);
     try {
-      if (platform === "android" || platform === "ios") {
-        // Mobile: open app in new tab for PWA install
-        window.open(window.location.origin, "_blank");
-      } else if (platform === "linux") {
+      if (platform === "linux") {
         await forceDownload("/installers/meshlink-install.sh", "meshlink-install.sh");
       } else {
         await forceDownload("/installers/Meshlink-Install.bat", "Meshlink-Install.bat");
@@ -279,29 +281,49 @@ export default function RegisterPage({ onComplete }: RegisterPageProps) {
             {/* Install info for selected platform */}
             {detectedPlatformInfo && (
               <div className="rounded-2xl glass border border-border/50 p-4 mb-4">
-                <p className="text-sm font-semibold text-foreground mb-1">{detectedPlatformInfo.name}</p>
-                <p className="text-[11px] text-muted-foreground mb-3">{detectedPlatformInfo.description}</p>
+                <p className="text-sm font-semibold text-foreground mb-2">{detectedPlatformInfo.name}</p>
 
-                {(platform === "android" || platform === "ios") ? (
-                  <div className="space-y-2">
-                    <p className="text-[11px] text-muted-foreground">
-                      {platform === "android"
-                        ? "The app will open in Chrome. Tap menu ⋮ → \"Install app\" to add to home screen."
-                        : "The app will open in Safari. Tap Share ↑ → \"Add to Home Screen\"."
-                      }
-                    </p>
+                {platform === "android" && (
+                  <div className="space-y-2 text-[12px] text-muted-foreground">
+                    <p>This app works directly in your browser. To add it to your home screen:</p>
+                    <div className="space-y-1.5 pl-1">
+                      <p>1. After registration, tap <b className="text-foreground">menu ⋮</b> in Chrome</p>
+                      <p>2. Tap <b className="text-foreground">"Install app"</b> or <b className="text-foreground">"Add to Home screen"</b></p>
+                      <p>3. The app icon will appear on your home screen</p>
+                    </div>
                   </div>
-                ) : (
-                  <div className="space-y-2">
-                    <p className="text-[11px] text-muted-foreground">
-                      {platform === "linux"
-                        ? "Downloads installer script. Run in terminal: chmod +x meshlink-install.sh && ./meshlink-install.sh"
-                        : "Downloads installer script. Double-click to run and create Desktop shortcut."
-                      }
-                    </p>
-                    <p className="text-[10px] font-mono text-muted-foreground">
-                      {detectedPlatformInfo.fileName} ({detectedPlatformInfo.fileSize})
-                    </p>
+                )}
+
+                {platform === "ios" && (
+                  <div className="space-y-2 text-[12px] text-muted-foreground">
+                    <p>This app works directly in Safari. To add it to your home screen:</p>
+                    <div className="space-y-1.5 pl-1">
+                      <p>1. After registration, tap <b className="text-foreground">Share ↑</b> in Safari</p>
+                      <p>2. Tap <b className="text-foreground">"Add to Home Screen"</b></p>
+                      <p>3. The app icon will appear on your home screen</p>
+                    </div>
+                  </div>
+                )}
+
+                {platform === "windows" && (
+                  <div className="space-y-2 text-[12px] text-muted-foreground">
+                    <p>Downloads <b className="text-foreground">Meshlink-Install.bat</b></p>
+                    <div className="space-y-1.5 pl-1">
+                      <p>1. Double-click the downloaded file</p>
+                      <p>2. Installer creates a shortcut on Desktop and Start Menu</p>
+                      <p>3. Opens Meshlink automatically</p>
+                    </div>
+                  </div>
+                )}
+
+                {platform === "linux" && (
+                  <div className="space-y-2 text-[12px] text-muted-foreground">
+                    <p>Downloads <b className="text-foreground">meshlink-install.sh</b></p>
+                    <div className="space-y-1.5 pl-1">
+                      <p>1. Open terminal in Downloads folder</p>
+                      <p>2. Run: <code className="text-primary bg-primary/10 px-1.5 py-0.5 rounded text-[11px]">chmod +x meshlink-install.sh && ./meshlink-install.sh</code></p>
+                      <p>3. Creates Desktop shortcut and opens Meshlink</p>
+                    </div>
                   </div>
                 )}
               </div>
@@ -318,18 +340,11 @@ export default function RegisterPage({ onComplete }: RegisterPageProps) {
               }`}
             >
               {downloading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  {(platform === "android" || platform === "ios") ? "Opening app..." : "Downloading..."}
-                </>
+                <><Loader2 className="h-4 w-4 animate-spin" /> Downloading...</>
+              ) : (platform === "android" || platform === "ios") ? (
+                <>Continue <ChevronRight className="h-4 w-4" /></>
               ) : (
-                <>
-                  {(platform === "android" || platform === "ios") ? (
-                    <><ExternalLink className="h-4 w-4" /> Install as App</>
-                  ) : (
-                    <><Download className="h-4 w-4" /> Download & Install</>
-                  )}
-                </>
+                <><Download className="h-4 w-4" /> Download & Install</>
               )}
             </button>
 
