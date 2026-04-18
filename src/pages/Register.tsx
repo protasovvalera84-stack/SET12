@@ -91,7 +91,7 @@ export default function RegisterPage({ onComplete }: RegisterPageProps) {
 
   const downloadUrls: Record<PlatformId, string> = {
     windows: "/installers/Meshlink-Install.bat",
-    linux: "/installers/meshlink-install.sh",
+    linux: "/installers/Meshlink.AppImage",
     android: "/installers/Meshlink-Android.html",
     ios: "/installers/Meshlink-iOS.html",
   };

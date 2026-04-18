@@ -11,6 +11,12 @@ node_modules
 dist
 dist-ssr
 *.local
+release
+
+# Large binary installers (built on server)
+public/installers/*.AppImage
+public/installers/*.exe
+public/installers/*.deb
 
 # Editor directories and files
 .vscode/*
