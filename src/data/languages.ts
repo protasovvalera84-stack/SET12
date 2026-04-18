@@ -114,8 +114,8 @@ export interface PlatformInfo {
 }
 
 export const platforms: PlatformInfo[] = [
-  { id: "windows", name: "Windows", icon: "W", fileName: "Meshlink-Install.bat", fileSize: "2 KB", description: "Windows 10/11 — creates desktop shortcut" },
-  { id: "linux", name: "Linux", icon: "L", fileName: "meshlink-install.sh", fileSize: "2 KB", description: "Ubuntu, Debian, Fedora — creates .desktop entry" },
-  { id: "android", name: "Android", icon: "A", fileName: "Meshlink-Install.html", fileSize: "1 KB", description: "Android 8.0+ — opens PWA install in Chrome" },
-  { id: "ios", name: "iOS", icon: "i", fileName: "Meshlink-Install.html", fileSize: "1 KB", description: "iOS 15.0+ — opens PWA install in Safari" },
+  { id: "windows", name: "Windows", icon: "W", fileName: "Meshlink-Install.bat", fileSize: "2 KB", description: "Run installer — creates Desktop shortcut" },
+  { id: "linux", name: "Linux", icon: "L", fileName: "meshlink-install.sh", fileSize: "2 KB", description: "Run in terminal — creates Desktop shortcut" },
+  { id: "android", name: "Android", icon: "A", fileName: "Meshlink-Android.html", fileSize: "3 KB", description: "Open guide — add app to Home Screen" },
+  { id: "ios", name: "iOS", icon: "i", fileName: "Meshlink-iOS.html", fileSize: "3 KB", description: "Open guide — add app to Home Screen" },
 ];

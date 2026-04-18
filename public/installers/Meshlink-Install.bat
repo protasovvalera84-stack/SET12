@@ -9,52 +9,48 @@ echo.
 echo  Installing Meshlink...
 echo.
 
+:: Set server URL
+set "SERVER_URL=http://72.56.244.207"
+
 :: Create app directory
 mkdir "%USERPROFILE%\Meshlink" 2>nul
 
-:: Detect server URL from where this was downloaded
-:: Default to localhost if unknown
-set "SERVER_URL=http://72.56.244.207"
-
-:: Create launcher bat
+:: Create launcher bat (hidden window)
 echo @echo off > "%USERPROFILE%\Meshlink\Meshlink.bat"
 echo start "" "%SERVER_URL%" >> "%USERPROFILE%\Meshlink\Meshlink.bat"
 
-:: Create VBS helper to make a proper shortcut with icon
-echo Set ws = CreateObject("WScript.Shell") > "%TEMP%\meshlink_shortcut.vbs"
-echo Set shortcut = ws.CreateShortcut(ws.SpecialFolders("Desktop") ^& "\Meshlink.lnk") >> "%TEMP%\meshlink_shortcut.vbs"
-echo shortcut.TargetPath = "%USERPROFILE%\Meshlink\Meshlink.bat" >> "%TEMP%\meshlink_shortcut.vbs"
-echo shortcut.IconLocation = "shell32.dll,14" >> "%TEMP%\meshlink_shortcut.vbs"
-echo shortcut.Description = "Meshlink - Decentralized Messenger" >> "%TEMP%\meshlink_shortcut.vbs"
-echo shortcut.WindowStyle = 7 >> "%TEMP%\meshlink_shortcut.vbs"
-echo shortcut.Save >> "%TEMP%\meshlink_shortcut.vbs"
+:: Create Desktop shortcut via VBScript
+echo Set ws = CreateObject("WScript.Shell") > "%TEMP%\ml_shortcut.vbs"
+echo Set sc = ws.CreateShortcut(ws.SpecialFolders("Desktop") ^& "\Meshlink.lnk") >> "%TEMP%\ml_shortcut.vbs"
+echo sc.TargetPath = "%USERPROFILE%\Meshlink\Meshlink.bat" >> "%TEMP%\ml_shortcut.vbs"
+echo sc.IconLocation = "shell32.dll,14" >> "%TEMP%\ml_shortcut.vbs"
+echo sc.Description = "Meshlink - Decentralized Messenger" >> "%TEMP%\ml_shortcut.vbs"
+echo sc.WindowStyle = 7 >> "%TEMP%\ml_shortcut.vbs"
+echo sc.Save >> "%TEMP%\ml_shortcut.vbs"
+cscript //nologo "%TEMP%\ml_shortcut.vbs"
+del "%TEMP%\ml_shortcut.vbs" 2>nul
 
-:: Run VBS to create shortcut
-cscript //nologo "%TEMP%\meshlink_shortcut.vbs"
-del "%TEMP%\meshlink_shortcut.vbs"
-
-:: Also create Start Menu shortcut
+:: Create Start Menu shortcut
 mkdir "%APPDATA%\Microsoft\Windows\Start Menu\Programs\Meshlink" 2>nul
-echo Set ws = CreateObject("WScript.Shell") > "%TEMP%\meshlink_start.vbs"
-echo Set shortcut = ws.CreateShortcut("%APPDATA%\Microsoft\Windows\Start Menu\Programs\Meshlink\Meshlink.lnk") >> "%TEMP%\meshlink_start.vbs"
-echo shortcut.TargetPath = "%USERPROFILE%\Meshlink\Meshlink.bat" >> "%TEMP%\meshlink_start.vbs"
-echo shortcut.IconLocation = "shell32.dll,14" >> "%TEMP%\meshlink_start.vbs"
-echo shortcut.Description = "Meshlink - Decentralized Messenger" >> "%TEMP%\meshlink_start.vbs"
-echo shortcut.Save >> "%TEMP%\meshlink_start.vbs"
-cscript //nologo "%TEMP%\meshlink_start.vbs"
-del "%TEMP%\meshlink_start.vbs"
+echo Set ws = CreateObject("WScript.Shell") > "%TEMP%\ml_start.vbs"
+echo Set sc = ws.CreateShortcut("%APPDATA%\Microsoft\Windows\Start Menu\Programs\Meshlink\Meshlink.lnk") >> "%TEMP%\ml_start.vbs"
+echo sc.TargetPath = "%USERPROFILE%\Meshlink\Meshlink.bat" >> "%TEMP%\ml_start.vbs"
+echo sc.IconLocation = "shell32.dll,14" >> "%TEMP%\ml_start.vbs"
+echo sc.Description = "Meshlink - Decentralized Messenger" >> "%TEMP%\ml_start.vbs"
+echo sc.Save >> "%TEMP%\ml_start.vbs"
+cscript //nologo "%TEMP%\ml_start.vbs"
+del "%TEMP%\ml_start.vbs" 2>nul
 
 echo.
 echo  ========================================
 echo   Installation complete!
 echo.
-echo   - Desktop shortcut created
-echo   - Start Menu entry created
-echo   - Opening Meshlink now...
+echo   Desktop shortcut: Meshlink.lnk
+echo   Start Menu: Programs\Meshlink
+echo.
+echo   Double-click the Meshlink icon on your
+echo   Desktop to launch the messenger.
 echo  ========================================
 echo.
-
-:: Open the app
-start "" "%SERVER_URL%"
-
-timeout /t 5
+echo  Press any key to close this window...
+pause >nul

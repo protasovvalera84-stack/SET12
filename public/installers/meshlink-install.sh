@@ -8,6 +8,8 @@ GREEN='\033[0;32m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
+SERVER_URL="http://72.56.244.207"
+
 echo ""
 echo -e "${CYAN}========================================"
 echo "   Meshlink - Decentralized Messenger"
@@ -15,8 +17,6 @@ echo -e "========================================${NC}"
 echo ""
 echo "Installing Meshlink..."
 echo ""
-
-SERVER_URL="http://72.56.244.207"
 
 # Create app directory
 mkdir -p "$HOME/Meshlink"
@@ -52,15 +52,14 @@ DESKTOP
 # Copy to Desktop if it exists
 DESKTOP_DIR="$HOME/Desktop"
 if [ ! -d "$DESKTOP_DIR" ]; then
-    # Try localized desktop folder
     DESKTOP_DIR=$(xdg-user-dir DESKTOP 2>/dev/null || echo "$HOME/Desktop")
 fi
 
 if [ -d "$DESKTOP_DIR" ]; then
     cp "$HOME/.local/share/applications/meshlink.desktop" "$DESKTOP_DIR/"
     chmod +x "$DESKTOP_DIR/meshlink.desktop" 2>/dev/null || true
-    # Mark as trusted on GNOME
     gio set "$DESKTOP_DIR/meshlink.desktop" metadata::trusted true 2>/dev/null || true
+    echo "  Desktop shortcut created: $DESKTOP_DIR/meshlink.desktop"
 fi
 
 # Update desktop database
@@ -73,7 +72,8 @@ echo ""
 echo "  - App menu entry created"
 echo "  - Desktop shortcut created"
 echo "  - Launcher: ~/Meshlink/meshlink"
+echo ""
+echo "  Double-click the Meshlink icon on your"
+echo "  Desktop to launch the messenger."
 echo -e "========================================${NC}"
 echo ""
-echo "Opening Meshlink..."
-xdg-open "$SERVER_URL" 2>/dev/null || echo "Open $SERVER_URL in your browser"
