@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ChatSidebar } from "@/components/ChatSidebar";
 import { ChatView } from "@/components/ChatView";
 import { EmptyChat } from "@/components/EmptyChat";
-import { chats as initialChats, Chat, Message } from "@/data/mockData";
+import { chats as initialChats, Chat, Message, MediaAttachment } from "@/data/mockData";
 
 const Index = () => {
   const [chatList, setChatList] = useState<Chat[]>(initialChats);
@@ -13,20 +13,24 @@ const Index = () => {
 
   const handleSelectChat = (id: string) => {
     setSelectedChatId(id);
-    // On mobile, close sidebar when chat is selected
     if (window.innerWidth < 768) {
       setSidebarOpen(false);
     }
   };
 
-  const handleSendMessage = (chatId: string, text: string) => {
+  const handleSendMessage = (chatId: string, text: string, media?: MediaAttachment[]) => {
     const newMessage: Message = {
       id: `msg-${Date.now()}`,
       senderId: "me",
       text,
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       read: false,
+      media,
     };
+
+    const lastMsg = media && media.length > 0 && !text
+      ? `[${media[0].type === "image" ? "Photo" : media[0].type === "video" ? "Video" : "Audio"}]`
+      : text;
 
     setChatList((prev) =>
       prev.map((chat) =>
@@ -34,12 +38,20 @@ const Index = () => {
           ? {
               ...chat,
               messages: [...chat.messages, newMessage],
-              lastMessage: text,
+              lastMessage: lastMsg,
               lastMessageTime: "now",
             }
           : chat,
       ),
     );
+  };
+
+  const handleCreateChat = (chat: Chat) => {
+    setChatList((prev) => [chat, ...prev]);
+    setSelectedChatId(chat.id);
+    if (window.innerWidth < 768) {
+      setSidebarOpen(false);
+    }
   };
 
   const handleBack = () => {
@@ -48,7 +60,6 @@ const Index = () => {
 
   return (
     <div className="flex h-screen w-full overflow-hidden">
-      {/* Sidebar: always visible on md+, toggled on mobile */}
       <div
         className={`${
           sidebarOpen ? "flex" : "hidden"
@@ -58,10 +69,10 @@ const Index = () => {
           chats={chatList}
           selectedChatId={selectedChatId}
           onSelectChat={handleSelectChat}
+          onCreateChat={handleCreateChat}
         />
       </div>
 
-      {/* Chat area: always visible on md+, toggled on mobile */}
       <div
         className={`${
           !sidebarOpen ? "flex" : "hidden"

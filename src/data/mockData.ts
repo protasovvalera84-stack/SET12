@@ -1,9 +1,19 @@
+export interface MediaAttachment {
+  id: string;
+  type: "image" | "video" | "audio";
+  name: string;
+  url: string;       // blob URL or data URL
+  size: number;       // bytes
+  mimeType: string;
+}
+
 export interface Message {
   id: string;
   senderId: string;
   text: string;
   timestamp: string;
   read: boolean;
+  media?: MediaAttachment[];
 }
 
 export interface Chat {
@@ -17,6 +27,7 @@ export interface Chat {
   unread: number;
   pinned?: boolean;
   members?: number;
+  description?: string;
   messages: Message[];
 }
 

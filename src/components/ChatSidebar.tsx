@@ -2,11 +2,13 @@ import { useState } from "react";
 import { Search, Plus, Hash, Users, Pin, Sparkles } from "lucide-react";
 import { Chat } from "@/data/mockData";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
+import { CreateChatDialog } from "@/components/CreateChatDialog";
 
 interface ChatSidebarProps {
   chats: Chat[];
   selectedChatId: string | null;
   onSelectChat: (id: string) => void;
+  onCreateChat: (chat: Chat) => void;
 }
 
 const TypeIcon = ({ type }: { type: Chat["type"] }) => {
@@ -15,9 +17,10 @@ const TypeIcon = ({ type }: { type: Chat["type"] }) => {
   return null;
 };
 
-export function ChatSidebar({ chats, selectedChatId, onSelectChat }: ChatSidebarProps) {
+export function ChatSidebar({ chats, selectedChatId, onSelectChat, onCreateChat }: ChatSidebarProps) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "dm" | "group" | "channel">("all");
+  const [createOpen, setCreateOpen] = useState(false);
 
   const filtered = chats.filter((c) => {
     if (filter !== "all" && c.type !== filter) return false;
@@ -29,111 +32,122 @@ export function ChatSidebar({ chats, selectedChatId, onSelectChat }: ChatSidebar
   const unpinned = filtered.filter((c) => !c.pinned);
 
   return (
-    <div className="relative flex h-full w-full md:w-80 flex-col border-r border-border/40 glass-strong">
-      {/* Decorative glow */}
-      <div className="pointer-events-none absolute -top-20 -left-20 h-60 w-60 rounded-full bg-primary/20 blur-3xl" />
+    <>
+      <div className="relative flex h-full w-full md:w-80 flex-col border-r border-border/40 glass-strong">
+        {/* Decorative glow */}
+        <div className="pointer-events-none absolute -top-20 -left-20 h-60 w-60 rounded-full bg-primary/20 blur-3xl" />
 
-      {/* Header */}
-      <div className="relative flex items-center justify-between px-5 py-4 border-b border-border/40">
-        <div className="flex items-center gap-2.5">
-          <div className="relative">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl gradient-primary shadow-glow">
-              <Sparkles className="h-4 w-4 text-primary-foreground" />
+        {/* Header */}
+        <div className="relative flex items-center justify-between px-5 py-4 border-b border-border/40">
+          <div className="flex items-center gap-2.5">
+            <div className="relative">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl gradient-primary shadow-glow">
+                <Sparkles className="h-4 w-4 text-primary-foreground" />
+              </div>
+            </div>
+            <div className="flex flex-col leading-tight">
+              <span className="font-serif italic text-lg gradient-text font-semibold">Meshlink</span>
+              <span className="font-mono text-[9px] tracking-[0.2em] uppercase text-muted-foreground">decentralized</span>
             </div>
           </div>
-          <div className="flex flex-col leading-tight">
-            <span className="font-serif italic text-lg gradient-text font-semibold">Meshlink</span>
-            <span className="font-mono text-[9px] tracking-[0.2em] uppercase text-muted-foreground">decentralized</span>
+          <div className="flex items-center gap-1">
+            <ThemeSwitcher />
+            <button
+              onClick={() => setCreateOpen(true)}
+              className="rounded-lg p-2 gradient-primary shadow-glow transition-all hover:scale-105"
+            >
+              <Plus className="h-4 w-4 text-primary-foreground" />
+            </button>
           </div>
         </div>
-        <div className="flex items-center gap-1">
-          <ThemeSwitcher />
-          <button className="rounded-lg p-2 gradient-primary shadow-glow transition-all hover:scale-105">
-            <Plus className="h-4 w-4 text-primary-foreground" />
-          </button>
+
+        {/* Search */}
+        <div className="relative px-4 py-3">
+          <div className="group flex items-center gap-2.5 rounded-2xl glass border border-border/50 px-4 py-2.5 transition-all focus-within:border-primary/50 focus-within:shadow-glow">
+            <Search className="h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+            <input
+              type="text"
+              placeholder="Search the mesh..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
+            />
+            <kbd className="hidden sm:inline-flex items-center rounded-md bg-muted/60 px-1.5 py-0.5 font-mono text-[9px] text-muted-foreground">&#x2318;K</kbd>
+          </div>
         </div>
-      </div>
 
-      {/* Search */}
-      <div className="relative px-4 py-3">
-        <div className="group flex items-center gap-2.5 rounded-2xl glass border border-border/50 px-4 py-2.5 transition-all focus-within:border-primary/50 focus-within:shadow-glow">
-          <Search className="h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-          <input
-            type="text"
-            placeholder="Search the mesh..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
-          />
-          <kbd className="hidden sm:inline-flex items-center rounded-md bg-muted/60 px-1.5 py-0.5 font-mono text-[9px] text-muted-foreground">&#x2318;K</kbd>
+        {/* Filters */}
+        <div className="relative flex gap-1.5 px-4 pb-3">
+          {(["all", "dm", "group", "channel"] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`relative rounded-full px-3 py-1.5 text-[11px] font-medium transition-all ${
+                filter === f
+                  ? "gradient-primary text-primary-foreground shadow-glow"
+                  : "text-muted-foreground hover:text-foreground hover:bg-surface-hover"
+              }`}
+            >
+              {f === "dm" ? "Direct" : f === "all" ? "All" : f.charAt(0).toUpperCase() + f.slice(1) + "s"}
+            </button>
+          ))}
         </div>
-      </div>
 
-      {/* Filters */}
-      <div className="relative flex gap-1.5 px-4 pb-3">
-        {(["all", "dm", "group", "channel"] as const).map((f) => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`relative rounded-full px-3 py-1.5 text-[11px] font-medium transition-all ${
-              filter === f
-                ? "gradient-primary text-primary-foreground shadow-glow"
-                : "text-muted-foreground hover:text-foreground hover:bg-surface-hover"
-            }`}
-          >
-            {f === "dm" ? "Direct" : f === "all" ? "All" : f.charAt(0).toUpperCase() + f.slice(1) + "s"}
-          </button>
-        ))}
-      </div>
+        {/* Chat list */}
+        <div className="relative flex-1 overflow-y-auto scrollbar-thin">
+          {pinned.length > 0 && (
+            <div className="px-3 py-1">
+              <div className="flex items-center gap-1.5 px-2 py-2">
+                <Pin className="h-3 w-3 text-primary" />
+                <span className="text-[10px] font-mono font-semibold uppercase tracking-[0.15em] gradient-text">Pinned</span>
+                <div className="flex-1 h-px bg-gradient-to-r from-border/60 to-transparent ml-2" />
+              </div>
+              {pinned.map((chat, i) => (
+                <ChatItem key={chat.id} chat={chat} selected={chat.id === selectedChatId} onSelect={onSelectChat} index={i} />
+              ))}
+            </div>
+          )}
 
-      {/* Chat list */}
-      <div className="relative flex-1 overflow-y-auto scrollbar-thin">
-        {pinned.length > 0 && (
           <div className="px-3 py-1">
-            <div className="flex items-center gap-1.5 px-2 py-2">
-              <Pin className="h-3 w-3 text-primary" />
-              <span className="text-[10px] font-mono font-semibold uppercase tracking-[0.15em] gradient-text">Pinned</span>
-              <div className="flex-1 h-px bg-gradient-to-r from-border/60 to-transparent ml-2" />
-            </div>
-            {pinned.map((chat, i) => (
+            {pinned.length > 0 && (
+              <div className="flex items-center gap-1.5 px-2 py-2 mt-2">
+                <span className="text-[10px] font-mono font-semibold uppercase tracking-[0.15em] text-muted-foreground">Recent</span>
+                <div className="flex-1 h-px bg-gradient-to-r from-border/60 to-transparent ml-2" />
+              </div>
+            )}
+            {unpinned.map((chat, i) => (
               <ChatItem key={chat.id} chat={chat} selected={chat.id === selectedChatId} onSelect={onSelectChat} index={i} />
             ))}
           </div>
-        )}
+        </div>
 
-        <div className="px-3 py-1">
-          {pinned.length > 0 && (
-            <div className="flex items-center gap-1.5 px-2 py-2 mt-2">
-              <span className="text-[10px] font-mono font-semibold uppercase tracking-[0.15em] text-muted-foreground">Recent</span>
-              <div className="flex-1 h-px bg-gradient-to-r from-border/60 to-transparent ml-2" />
+        {/* Footer */}
+        <div className="relative border-t border-border/40 px-4 py-3 glass">
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl gradient-primary text-xs font-bold text-primary-foreground shadow-glow">
+                ME
+              </div>
+              <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-card bg-online shadow-lg shadow-online/50" />
             </div>
-          )}
-          {unpinned.map((chat, i) => (
-            <ChatItem key={chat.id} chat={chat} selected={chat.id === selectedChatId} onSelect={onSelectChat} index={i} />
-          ))}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-foreground truncate">Anonymous</p>
+              <p className="text-[10px] font-mono text-muted-foreground truncate">peer:7f3a...e9b1</p>
+            </div>
+            <div className="flex flex-col items-end">
+              <span className="text-[9px] font-mono text-online">● ONLINE</span>
+              <span className="text-[9px] font-mono text-muted-foreground">3 relays</span>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="relative border-t border-border/40 px-4 py-3 glass">
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl gradient-primary text-xs font-bold text-primary-foreground shadow-glow">
-              ME
-            </div>
-            <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-card bg-online shadow-lg shadow-online/50" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-foreground truncate">Anonymous</p>
-            <p className="text-[10px] font-mono text-muted-foreground truncate">peer:7f3a...e9b1</p>
-          </div>
-          <div className="flex flex-col items-end">
-            <span className="text-[9px] font-mono text-online">● ONLINE</span>
-            <span className="text-[9px] font-mono text-muted-foreground">3 relays</span>
-          </div>
-        </div>
-      </div>
-    </div>
+      <CreateChatDialog
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onCreate={onCreateChat}
+      />
+    </>
   );
 }
 
