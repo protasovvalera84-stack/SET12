@@ -2,7 +2,8 @@ import { useState } from "react";
 import { ChatSidebar } from "@/components/ChatSidebar";
 import { ChatView } from "@/components/ChatView";
 import { EmptyChat } from "@/components/EmptyChat";
-import { chats as initialChats, Chat, Message, MediaAttachment, Story, StoryItem } from "@/data/mockData";
+import { InviteMembersDialog } from "@/components/InviteMembersDialog";
+import { chats as initialChats, contacts, Chat, Message, MediaAttachment, Story, StoryItem } from "@/data/mockData";
 
 const initialStories: Story[] = [
   {
@@ -32,6 +33,7 @@ const Index = () => {
   const [stories, setStories] = useState<Story[]>(initialStories);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [inviteOpen, setInviteOpen] = useState(false);
 
   const selectedChat = chatList.find((c) => c.id === selectedChatId) ?? null;
 
@@ -81,6 +83,41 @@ const Index = () => {
     }
   };
 
+  const handleInvite = (chatId: string, contactIds: string[]) => {
+    const now = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const invited = contactIds
+      .map((id) => contacts.find((c) => c.id === id))
+      .filter(Boolean);
+
+    const names = invited.map((c) => c!.name).join(", ");
+    const isChannel = chatList.find((c) => c.id === chatId)?.type === "channel";
+
+    const systemMsg: Message = {
+      id: `msg-${Date.now()}`,
+      senderId: "system",
+      text: isChannel
+        ? `${names} ${invited.length === 1 ? "was" : "were"} invited to subscribe`
+        : `${names} ${invited.length === 1 ? "was" : "were"} added to the group`,
+      timestamp: now,
+      read: true,
+    };
+
+    setChatList((prev) =>
+      prev.map((chat) =>
+        chat.id === chatId
+          ? {
+              ...chat,
+              memberIds: [...(chat.memberIds || []), ...contactIds],
+              members: (chat.members || 0) + contactIds.length,
+              messages: [...chat.messages, systemMsg],
+              lastMessage: systemMsg.text,
+              lastMessageTime: "now",
+            }
+          : chat,
+      ),
+    );
+  };
+
   const handleBack = () => setSidebarOpen(true);
 
   return (
@@ -97,11 +134,30 @@ const Index = () => {
       </div>
       <div className={`${!sidebarOpen ? "flex" : "hidden"} md:flex flex-1 min-w-0`}>
         {selectedChat ? (
-          <ChatView chat={selectedChat} onSendMessage={handleSendMessage} onBack={handleBack} />
+          <ChatView
+            chat={selectedChat}
+            onSendMessage={handleSendMessage}
+            onBack={handleBack}
+            onInviteClick={
+              selectedChat.type === "group" || selectedChat.type === "channel"
+                ? () => setInviteOpen(true)
+                : undefined
+            }
+          />
         ) : (
           <EmptyChat />
         )}
       </div>
+
+      {selectedChat && (selectedChat.type === "group" || selectedChat.type === "channel") && (
+        <InviteMembersDialog
+          open={inviteOpen}
+          chat={selectedChat}
+          contacts={contacts}
+          onClose={() => setInviteOpen(false)}
+          onInvite={handleInvite}
+        />
+      )}
     </div>
   );
 };

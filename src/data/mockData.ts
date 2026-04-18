@@ -27,6 +27,7 @@ export interface Chat {
   unread: number;
   pinned?: boolean;
   members?: number;
+  memberIds?: string[];
   description?: string;
   messages: Message[];
 }
@@ -47,6 +48,25 @@ export interface Story {
   items: StoryItem[];
   viewed: boolean;
 }
+
+export interface Contact {
+  id: string;
+  name: string;
+  avatar: string;
+  online: boolean;
+  peerId: string;
+}
+
+export const contacts: Contact[] = [
+  { id: "alice", name: "Alice Nakamoto", avatar: "AN", online: true, peerId: "peer:a1b2...c3d4" },
+  { id: "bob", name: "Bob Chen", avatar: "BC", online: true, peerId: "peer:e5f6...g7h8" },
+  { id: "carol", name: "Carol Rivera", avatar: "CR", online: false, peerId: "peer:i9j0...k1l2" },
+  { id: "dave", name: "Dave Kim", avatar: "DK", online: true, peerId: "peer:m3n4...o5p6" },
+  { id: "eve", name: "Eve Torres", avatar: "ET", online: false, peerId: "peer:q7r8...s9t0" },
+  { id: "frank", name: "Frank Zhao", avatar: "FZ", online: true, peerId: "peer:u1v2...w3x4" },
+  { id: "grace", name: "Grace Okafor", avatar: "GO", online: false, peerId: "peer:y5z6...a7b8" },
+  { id: "hiro", name: "Hiro Tanaka", avatar: "HT", online: true, peerId: "peer:c9d0...e1f2" },
+];
 
 const ME = "me";
 
@@ -80,6 +100,7 @@ export const chats: Chat[] = [
     lastMessageTime: "15m",
     unread: 5,
     members: 8,
+    memberIds: ["me", "bob", "carol", "alice", "dave"],
     messages: [
       { id: "m1", senderId: "bob", text: "Pushed the libp2p QUIC upgrade to the relay crate", timestamp: "9:45 AM", read: true },
       { id: "m2", senderId: "carol", text: "Does it handle NAT traversal for symmetric NATs now?", timestamp: "9:48 AM", read: true },
@@ -96,6 +117,7 @@ export const chats: Chat[] = [
     lastMessageTime: "1h",
     unread: 0,
     members: 142,
+    memberIds: ["me", "alice", "bob", "carol", "dave", "eve"],
     messages: [
       { id: "m1", senderId: "system", text: "v0.3.0-alpha released\n\n- E2EE group chats (X3DH + Double Ratchet)\n- CRDT-based message ordering\n- File sharing via encrypted IPFS blobs\n- selfdeploy CLI v0.2", timestamp: "9:00 AM", read: true },
     ],
@@ -125,6 +147,7 @@ export const chats: Chat[] = [
     lastMessageTime: "5h",
     unread: 0,
     members: 23,
+    memberIds: ["me", "frank", "grace"],
     messages: [
       { id: "m1", senderId: "secbot", text: "Weekly Security Report\n\nSAST: 0 high, 2 medium\nSCA: 0 critical CVEs\nDependency audit: all clear\nBinary signatures: verified", timestamp: "6:00 AM", read: true },
     ],
@@ -138,6 +161,7 @@ export const chats: Chat[] = [
     lastMessageTime: "1d",
     unread: 0,
     members: 12,
+    memberIds: ["me", "dave", "hiro"],
     messages: [
       { id: "m1", senderId: "dave", text: "50-node simulation completed. Average convergence: 340ms", timestamp: "Yesterday", read: true },
       { id: "m2", senderId: ME, text: "That's within our SLA target. What about partition healing?", timestamp: "Yesterday", read: true },

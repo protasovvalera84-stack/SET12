@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import {
   Phone, Video, MoreVertical, Paperclip, Smile, Send,
   Lock, Hash, Users, Sparkles, Mic, ArrowLeft,
-  Image, Film, Music, X, Download,
+  Image, Film, Music, X, Download, UserPlus,
 } from "lucide-react";
 import { Chat, Message, MediaAttachment } from "@/data/mockData";
 
@@ -10,6 +10,7 @@ interface ChatViewProps {
   chat: Chat;
   onSendMessage: (chatId: string, text: string, media?: MediaAttachment[]) => void;
   onBack: () => void;
+  onInviteClick?: () => void;
 }
 
 function formatFileSize(bytes: number): string {
@@ -27,7 +28,7 @@ function downloadMedia(attachment: MediaAttachment) {
   document.body.removeChild(a);
 }
 
-export function ChatView({ chat, onSendMessage, onBack }: ChatViewProps) {
+export function ChatView({ chat, onSendMessage, onBack, onInviteClick }: ChatViewProps) {
   const [input, setInput] = useState("");
   const [pendingMedia, setPendingMedia] = useState<MediaAttachment[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -143,6 +144,15 @@ export function ChatView({ chat, onSendMessage, onBack }: ChatViewProps) {
                 <Video className="h-4 w-4 text-muted-foreground" />
               </button>
             </>
+          )}
+          {(chat.type === "group" || chat.type === "channel") && onInviteClick && (
+            <button
+              onClick={onInviteClick}
+              className="rounded-xl p-2.5 hover:bg-surface-hover transition-all hover:scale-105 hover:text-primary"
+              title={chat.type === "channel" ? "Invite subscribers" : "Add members"}
+            >
+              <UserPlus className="h-4 w-4 text-muted-foreground" />
+            </button>
           )}
           <button className="rounded-xl p-2.5 hover:bg-surface-hover transition-all hover:scale-105">
             <MoreVertical className="h-4 w-4 text-muted-foreground" />
