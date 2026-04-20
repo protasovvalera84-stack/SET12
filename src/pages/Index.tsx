@@ -5,6 +5,7 @@ import { EmptyChat } from "@/components/EmptyChat";
 import { AccountSettings } from "@/components/AccountSettings";
 import { CallScreen, CallType } from "@/components/CallScreen";
 import { GroupSettingsDialog } from "@/components/GroupSettingsDialog";
+import { DmSettingsDialog } from "@/components/DmSettingsDialog";
 import {
   chats as initialChats, contacts, defaultProfile,
   Chat, Message, MediaAttachment, Story, StoryItem, UserProfile, Topic, ChatFolder,
@@ -49,6 +50,7 @@ const Index = ({ initialProfile, onProfileChange, onLogout }: IndexProps = {}) =
   const [callOpen, setCallOpen] = useState(false);
   const [callType, setCallType] = useState<CallType>("audio");
   const [groupSettingsOpen, setGroupSettingsOpen] = useState(false);
+  const [dmSettingsOpen, setDmSettingsOpen] = useState(false);
   const [folders, setFolders] = useState<ChatFolder[]>([
     { id: "fav-default", name: "Favorites", chatIds: [] },
   ]);
@@ -165,6 +167,21 @@ const Index = ({ initialProfile, onProfileChange, onLogout }: IndexProps = {}) =
     if (selectedChatId === chatId) setSelectedChatId(null);
   };
 
+  const handleBlockUser = (chatId: string) => {
+    const chat = chatList.find((c) => c.id === chatId);
+    if (!chat) return;
+    const systemMsg: Message = {
+      id: `msg-${Date.now()}`,
+      senderId: "system",
+      text: `${chat.name} has been blocked. You will no longer receive messages or calls.`,
+      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      read: true,
+    };
+    setChatList((prev) =>
+      prev.map((c) => c.id === chatId ? { ...c, messages: [...c.messages, systemMsg], lastMessage: "User blocked", lastMessageTime: "now" } : c),
+    );
+  };
+
   const handleBack = () => setSidebarOpen(true);
 
   return (
@@ -197,6 +214,9 @@ const Index = ({ initialProfile, onProfileChange, onLogout }: IndexProps = {}) =
                 ? () => setGroupSettingsOpen(true)
                 : undefined
             }
+            onDmSettingsClick={
+              selectedChat.type === "dm" ? () => setDmSettingsOpen(true) : undefined
+            }
           />
         ) : (
           <EmptyChat />
@@ -213,6 +233,19 @@ const Index = ({ initialProfile, onProfileChange, onLogout }: IndexProps = {}) =
           onUpdateChat={handleUpdateChat}
           onDeleteChat={handleDeleteChat}
           onFoldersChange={setFolders}
+        />
+      )}
+
+      {selectedChat && selectedChat.type === "dm" && (
+        <DmSettingsDialog
+          open={dmSettingsOpen}
+          chat={selectedChat}
+          folders={folders}
+          onClose={() => setDmSettingsOpen(false)}
+          onUpdateChat={handleUpdateChat}
+          onDeleteChat={handleDeleteChat}
+          onFoldersChange={setFolders}
+          onBlockUser={handleBlockUser}
         />
       )}
 
