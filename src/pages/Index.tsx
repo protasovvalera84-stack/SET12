@@ -7,7 +7,7 @@ import { CallScreen, CallType } from "@/components/CallScreen";
 import { GroupSettingsDialog } from "@/components/GroupSettingsDialog";
 import {
   chats as initialChats, contacts, defaultProfile,
-  Chat, Message, MediaAttachment, Story, StoryItem, UserProfile, Topic,
+  Chat, Message, MediaAttachment, Story, StoryItem, UserProfile, Topic, ChatFolder,
 } from "@/data/mockData";
 
 const initialStories: Story[] = [
@@ -49,6 +49,9 @@ const Index = ({ initialProfile, onProfileChange, onLogout }: IndexProps = {}) =
   const [callOpen, setCallOpen] = useState(false);
   const [callType, setCallType] = useState<CallType>("audio");
   const [groupSettingsOpen, setGroupSettingsOpen] = useState(false);
+  const [folders, setFolders] = useState<ChatFolder[]>([
+    { id: "fav-default", name: "Favorites", chatIds: [] },
+  ]);
 
   const selectedChat = chatList.find((c) => c.id === selectedChatId) ?? null;
 
@@ -171,11 +174,13 @@ const Index = ({ initialProfile, onProfileChange, onLogout }: IndexProps = {}) =
           chats={chatList}
           stories={stories}
           profile={profile}
+          folders={folders}
           selectedChatId={selectedChatId}
           onSelectChat={handleSelectChat}
           onCreateChat={handleCreateChat}
           onAddStory={handleAddStory}
           onOpenSettings={() => setSettingsOpen(true)}
+          onFoldersChange={setFolders}
         />
       </div>
       <div className={`${!sidebarOpen ? "flex" : "hidden"} md:flex flex-1 min-w-0`}>
@@ -203,9 +208,11 @@ const Index = ({ initialProfile, onProfileChange, onLogout }: IndexProps = {}) =
           open={groupSettingsOpen}
           chat={selectedChat}
           contacts={contacts}
+          folders={folders}
           onClose={() => setGroupSettingsOpen(false)}
           onUpdateChat={handleUpdateChat}
           onDeleteChat={handleDeleteChat}
+          onFoldersChange={setFolders}
         />
       )}
 
